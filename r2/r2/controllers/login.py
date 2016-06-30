@@ -140,6 +140,16 @@ def handle_register(
         form.has_errors("email", errors.SPONSOR_NO_EMAIL)
         _event(error='SPONSOR_NO_EMAIL')
 
+    elif not email:
+        c.errors.add(errors.REQUIRED_EMAIL, field="email")
+        form.has_errors("email", errors.REQUIRED_EMAIL)
+        _event(error='REQUIRED_EMAIL')
+
+    elif email and "@playnetwork.com" not in email:
+        c.errors.add(errors.GOOD_EMAIL, field="email")
+        form.has_errors("email", errors.GOOD_EMAIL)
+        _event(error='GOOD_EMAIL')
+
     else:
         try:
             user = register(name, password, request.ip)
