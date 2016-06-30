@@ -37,7 +37,7 @@ postgresql
 postgresql-client
 rabbitmq-server
 haproxy
-nginx
+nginx-full
 gunicorn
 redis-server
 zookeeperd
