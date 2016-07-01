@@ -820,6 +820,59 @@ def require_domain(required_domain):
     if not is_subdomain(request.host, required_domain):
         abort(ForbiddenError(errors.WRONG_DOMAIN))
 
+## PN Custom ################
+
+RE_VERIFICATION_PATH = re.compile("^/verification/.*$", re.I)
+RE_APILOGIN_PATH = re.compile("^/api/login.*$", re.I)
+RE_REGISTER_PATH = re.compile("^/api/register.*$", re.I)
+RE_MESSAGEBUS_PATH = re.compile("^/message-bus/.*$", re.I)
+
+def require_loggedin():
+    if not c.user_is_loggedin or not c.user.email_verified:
+        g.log.warning("!!!!!!!!!!" + request.path + " " + str(request.path not in [
+            "/login", 
+            "/post/login", 
+            "/verify", 
+            "/api/update_email",
+            "/api/check_username",
+            "/api/check_email",
+            "/api/check_password",
+            "/password",
+            "/api/password",
+            ] and \
+            not RE_APILOGIN_PATH.match(request.path) and \
+            not RE_REGISTER_PATH.match(request.path) and \
+            not RE_VERIFICATION_PATH.match(request.path) and \
+            not RE_MESSAGEBUS_PATH.match(request.path)))
+
+        if request.path not in [
+            "/login", 
+            "/post/login", 
+            "/verify", 
+            "/api/update_email",
+            "/api/check_username",
+            "/api/check_email",
+            "/api/check_password",
+            "/password",
+            "/api/password",
+            ] and \
+            not RE_APILOGIN_PATH.match(request.path) and \
+            not RE_REGISTER_PATH.match(request.path) and \
+            not RE_VERIFICATION_PATH.match(request.path) and \
+            not RE_MESSAGEBUS_PATH.match(request.path):
+            
+            headers = {"Cache-Control": "private, no-cache", "Pragma": "no-cache"}
+            # Browsers change the method to GET on 301, and 308 is ill-supported.
+            status_code = 301 if request.method == "GET" else 307
+            
+            if not c.user.email_verified:
+                abort(status_code, location='/verify', headers=headers)
+            else:
+            #if not c.user_is_loggedin:
+                abort(status_code, location='/login', headers=headers)
+
+
+
 
 def disable_subreddit_css():
     def wrap(f):
@@ -852,6 +905,7 @@ def abort_with_error(error, code=None):
         explanation=error.message,
         fields=error.fields,
     ))
+
 
 
 class MinimalController(BaseController):
@@ -1526,6 +1580,8 @@ class RedditController(OAuth2ResourceController):
             c.user_is_admin = maybe_admin and c.user.name in g.admins
             c.user_is_sponsor = c.user_is_admin or c.user.name in g.sponsors
             c.otp_cached = is_otpcookie_valid
+
+        require_loggedin()
 
         enforce_https()
 
